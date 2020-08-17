@@ -7,6 +7,7 @@
     * 白猫尾 东南大学
 * 本次比赛站在了前辈的肩膀上完成，同时也跟大赛的其它选手进行了交流与学习，主要参考：
     * https://github.com/chizhu/yiguan_sex_age_predict_1st_solution
+    * https://github.com/luoda888/HUAWEI-DIGIX-AgeGroup/tree/master/chizhu_nurbs
 * 大赛链接：
     * https://algo.qq.com/
 * 开源地址：
