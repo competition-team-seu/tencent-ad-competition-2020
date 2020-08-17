@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-
 import gc
 import os
 import time
@@ -22,14 +20,15 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.utils import to_categorical
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "4"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 data_list = pd.read_pickle('all_log_agg_wide_semi_input_1.pkl')
 data_list.replace('\\N', '0', inplace=True)
 
 train_labels = pd.read_csv('./train_preliminary/user.csv')
 
-### Tokenizer 序列化文本
+
+# Tokenizer 序列化文本
 def set_tokenizer(docs, split_char=' ', max_len=100):
     '''
     输入
@@ -76,7 +75,7 @@ class EpochSaver(gensim.models.callbacks.CallbackAny2Vec):
 
 
 # 得到embedding矩阵
-def get_embedding_matrix(word_index, embed_size=300, Emed_path="w2v_300.txt"):
+def get_embedding_matrix(word_index, embed_size=256, Emed_path="w2v_256.txt"):
     embeddings_index = gensim.models.Word2Vec.load(Emed_path)
     nb_words = len(word_index) + 1
     embedding_matrix = np.zeros((nb_words, embed_size))
@@ -113,19 +112,19 @@ x6, index_6 = set_tokenizer(text_6_list, split_char=' ', max_len=180)
 print('序列化完成')
 gc.collect()
 
-emb1 = get_embedding_matrix(index_1, embed_size=300, Emed_path='./semi_model/advertiser_w2v_300.bin')
+emb1 = get_embedding_matrix(index_1, embed_size=256, Emed_path='./semi_model/advertiser_w2v_256.bin')
 gc.collect()
 print(emb1[1000])
 
-emb2 = get_embedding_matrix(index_2, embed_size=300, Emed_path='./semi_model/ad_w2v_300.bin')
+emb2 = get_embedding_matrix(index_2, embed_size=256, Emed_path='./semi_model/ad_w2v_256.bin')
 gc.collect()
 print(emb2[1000])
 
-emb3 = get_embedding_matrix(index_3, embed_size=384, Emed_path='./semi_model/creative_w2v_384.bin')
+emb3 = get_embedding_matrix(index_3, embed_size=256, Emed_path='./semi_model/creative_w2v_256.bin')
 gc.collect()
 print(emb3[1000])
 
-emb4 = get_embedding_matrix(index_4, embed_size=300, Emed_path='./semi_model/product_w2v_300.bin')
+emb4 = get_embedding_matrix(index_4, embed_size=256, Emed_path='./semi_model/product_w2v_256.bin')
 gc.collect()
 print(emb4[1000])
 
@@ -133,21 +132,21 @@ emb6 = get_embedding_matrix(index_6, embed_size=256, Emed_path='./semi_model/ind
 gc.collect()
 print(emb6[100])
 
-emb1_1 = get_embedding_matrix(index_1, embed_size=256, Emed_path='./semi_model/advertiser_w2v_256_v2.bin')
-gc.collect()
-print(emb1_1[1000])
-
-emb2_1 = get_embedding_matrix(index_2, embed_size=256, Emed_path='./semi_model/ad_w2v_256_v2.bin')
-gc.collect()
-print(emb2_1[1000])
-
-emb3_1 = get_embedding_matrix(index_3, embed_size=256, Emed_path='./semi_model/creative_w2v_256_v2.bin')
-gc.collect()
-print(emb3_1[1000])
-
-emb4_1 = get_embedding_matrix(index_4, embed_size=256, Emed_path='./semi_model/product_w2v_256_v2.bin')
-gc.collect()
-print(emb4_1[1000])
+# emb1_1 = get_embedding_matrix(index_1, embed_size=256, Emed_path='./semi_model/advertiser_w2v_256_v2.bin')
+# gc.collect()
+# print(emb1_1[1000])
+#
+# emb2_1 = get_embedding_matrix(index_2, embed_size=256, Emed_path='./semi_model/ad_w2v_256_v2.bin')
+# gc.collect()
+# print(emb2_1[1000])
+#
+# emb3_1 = get_embedding_matrix(index_3, embed_size=256, Emed_path='./semi_model/creative_w2v_256_v2.bin')
+# gc.collect()
+# print(emb3_1[1000])
+#
+# emb4_1 = get_embedding_matrix(index_4, embed_size=256, Emed_path='./semi_model/product_w2v_256_v2.bin')
+# gc.collect()
+# print(emb4_1[1000])
 
 print('id嵌入载入完毕')
 
@@ -266,7 +265,8 @@ class Attention(Layer):
         return input_shape[0], self.features_dim
 
 
-def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, emb3_1, emb4_1, num_features_input):
+# def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, emb3_1, emb4_1, num_features_input):
+def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, num_features_input):
     K.clear_session()
 
     emb_layer_1 = Embedding(
@@ -304,34 +304,35 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
         input_length=180,
         trainable=False
     )
-    emb_layer_1_1 = Embedding(
-        input_dim=emb1_1.shape[0],
-        output_dim=emb1_1.shape[1],
-        weights=[emb1_1],
-        input_length=180,
-        trainable=False
-    )
-    emb_layer_2_1 = Embedding(
-        input_dim=emb2_1.shape[0],
-        output_dim=emb2_1.shape[1],
-        weights=[emb2_1],
-        input_length=180,
-        trainable=False
-    )
-    emb_layer_3_1 = Embedding(
-        input_dim=emb3_1.shape[0],
-        output_dim=emb3_1.shape[1],
-        weights=[emb3_1],
-        input_length=180,
-        trainable=False
-    )
-    emb_layer_4_1 = Embedding(
-        input_dim=emb4_1.shape[0],
-        output_dim=emb4_1.shape[1],
-        weights=[emb4_1],
-        input_length=180,
-        trainable=False
-    )
+
+    # emb_layer_1_1 = Embedding(
+    #     input_dim=emb1_1.shape[0],
+    #     output_dim=emb1_1.shape[1],
+    #     weights=[emb1_1],
+    #     input_length=180,
+    #     trainable=False
+    # )
+    # emb_layer_2_1 = Embedding(
+    #     input_dim=emb2_1.shape[0],
+    #     output_dim=emb2_1.shape[1],
+    #     weights=[emb2_1],
+    #     input_length=180,
+    #     trainable=False
+    # )
+    # emb_layer_3_1 = Embedding(
+    #     input_dim=emb3_1.shape[0],
+    #     output_dim=emb3_1.shape[1],
+    #     weights=[emb3_1],
+    #     input_length=180,
+    #     trainable=False
+    # )
+    # emb_layer_4_1 = Embedding(
+    #     input_dim=emb4_1.shape[0],
+    #     output_dim=emb4_1.shape[1],
+    #     weights=[emb4_1],
+    #     input_length=180,
+    #     trainable=False
+    # )
 
     seq1 = Input(shape=(180,))
     seq2 = Input(shape=(180,))
@@ -347,11 +348,10 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     x4 = emb_layer_4(seq4)
     x6 = emb_layer_6(seq6)
 
-    x1_1 = emb_layer_1_1(seq1)
-    x2_1 = emb_layer_2_1(seq2)
-    x3_1 = emb_layer_3_1(seq3)
-
-    x4_1 = emb_layer_4_1(seq4)
+    # x1_1 = emb_layer_1_1(seq1)
+    # x2_1 = emb_layer_2_1(seq2)
+    # x3_1 = emb_layer_3_1(seq3)
+    # x4_1 = emb_layer_4_1(seq4)
 
     sdrop = SpatialDropout1D(rate=0.1)
 
@@ -362,13 +362,27 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     x4 = sdrop(x4)
     x6 = sdrop(x6)
 
-    x1_1 = sdrop(x1_1)
-    x2_1 = sdrop(x2_1)
-    x3_1 = sdrop(x3_1)
+    # x1_1 = sdrop(x1_1)
+    # x2_1 = sdrop(x2_1)
+    # x3_1 = sdrop(x3_1)
+    # x4_1 = sdrop(x4_1)
 
-    x4_1 = sdrop(x4_1)
+    query = Dense(256, activation=custom_gelu)(x1)
+    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    key = Dense(256, activation=custom_gelu)(x1)
+    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    value = Dense(256, activation=custom_gelu)(x1)
+    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    qk = Multiply()([query, key])
+    attention = Dense(64, activation='softmax')(qk)
+    a_value = Multiply()([attention, value])
+    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
 
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x1))
+    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
     att_1 = Attention(180)(x)
     semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
     merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
@@ -380,7 +394,22 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
     x1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
 
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x2))
+    query = Dense(256, activation=custom_gelu)(x2)
+    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    key = Dense(256, activation=custom_gelu)(x2)
+    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    value = Dense(256, activation=custom_gelu)(x2)
+    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    qk = Multiply()([query, key])
+    attention = Dense(64, activation='softmax')(qk)
+    a_value = Multiply()([attention, value])
+    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+
+    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
     att_1 = Attention(180)(x)
     semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
     merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
@@ -392,7 +421,22 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
     x2_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
 
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x3))
+    query = Dense(256, activation=custom_gelu)(x3)
+    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    key = Dense(256, activation=custom_gelu)(x3)
+    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    value = Dense(256, activation=custom_gelu)(x3)
+    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    qk = Multiply()([query, key])
+    attention = Dense(64, activation='softmax')(qk)
+    a_value = Multiply()([attention, value])
+    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+
+    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
     att_1 = Attention(180)(x)
     semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
     merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
@@ -404,7 +448,22 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
     x3_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
 
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x4))
+    query = Dense(256, activation=custom_gelu)(x4)
+    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    key = Dense(256, activation=custom_gelu)(x4)
+    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    value = Dense(256, activation=custom_gelu)(x4)
+    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    qk = Multiply()([query, key])
+    attention = Dense(64, activation='softmax')(qk)
+    a_value = Multiply()([attention, value])
+    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+
+    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
     att_1 = Attention(180)(x)
     semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
     merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
@@ -416,7 +475,22 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
     x4_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
 
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x6))
+    query = Dense(256, activation=custom_gelu)(x6)
+    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    key = Dense(256, activation=custom_gelu)(x6)
+    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    value = Dense(256, activation=custom_gelu)(x6)
+    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    qk = Multiply()([query, key])
+    attention = Dense(64, activation='softmax')(qk)
+    a_value = Multiply()([attention, value])
+    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+
+    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
     att_1 = Attention(180)(x)
     semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
     merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
@@ -428,109 +502,110 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
     x6_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
 
-    query = Dense(256, activation=custom_gelu)(x1_1)
-    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
-    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
-    key = Dense(256, activation=custom_gelu)(x1_1)
-    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
-    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
-    value = Dense(256, activation=custom_gelu)(x1_1)
-    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
-    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
-    qk = Multiply()([query, key])
-    attention = Dense(64, activation='softmax')(qk)
-    a_value = Multiply()([attention, value])
-    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
-    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
-    att_1 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
-    att_2 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x1_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
-
-    query = Dense(256, activation=custom_gelu)(x2_1)
-    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
-    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
-    key = Dense(256, activation=custom_gelu)(x2_1)
-    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
-    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
-    value = Dense(256, activation=custom_gelu)(x2_1)
-    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
-    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
-    qk = Multiply()([query, key])
-    attention = Dense(64, activation='softmax')(qk)
-    a_value = Multiply()([attention, value])
-    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
-    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
-    att_1 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
-    att_2 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x2_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
-
-    query = Dense(256, activation=custom_gelu)(x3_1)
-    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
-    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
-    key = Dense(256, activation=custom_gelu)(x3_1)
-    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
-    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
-    value = Dense(256, activation=custom_gelu)(x3_1)
-    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
-    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
-    qk = Multiply()([query, key])
-    attention = Dense(64, activation='softmax')(qk)
-    a_value = Multiply()([attention, value])
-    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
-    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
-    att_1 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
-    att_2 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x3_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
-
-    query = Dense(256, activation=custom_gelu)(x4_1)
-    query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
-    query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
-    key = Dense(256, activation=custom_gelu)(x4_1)
-    key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
-    key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
-    value = Dense(256, activation=custom_gelu)(x4_1)
-    value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
-    value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
-    qk = Multiply()([query, key])
-    attention = Dense(64, activation='softmax')(qk)
-    a_value = Multiply()([attention, value])
-    tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
-    tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
-    att_1 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
-    att_2 = Attention(180)(x)
-    semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
-    merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
-    merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
-    x4_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
+    # query = Dense(256, activation=custom_gelu)(x1_1)
+    # query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    # query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    # key = Dense(256, activation=custom_gelu)(x1_1)
+    # key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    # key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    # value = Dense(256, activation=custom_gelu)(x1_1)
+    # value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    # value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    # qk = Multiply()([query, key])
+    # attention = Dense(64, activation='softmax')(qk)
+    # a_value = Multiply()([attention, value])
+    # tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    # tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+    #
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
+    # att_1 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
+    # att_2 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x1_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
+    #
+    # query = Dense(256, activation=custom_gelu)(x2_1)
+    # query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    # query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    # key = Dense(256, activation=custom_gelu)(x2_1)
+    # key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    # key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    # value = Dense(256, activation=custom_gelu)(x2_1)
+    # value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    # value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    # qk = Multiply()([query, key])
+    # attention = Dense(64, activation='softmax')(qk)
+    # a_value = Multiply()([attention, value])
+    # tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    # tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
+    # att_1 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
+    # att_2 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x2_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
+    #
+    # query = Dense(256, activation=custom_gelu)(x3_1)
+    # query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    # query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    # key = Dense(256, activation=custom_gelu)(x3_1)
+    # key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    # key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    # value = Dense(256, activation=custom_gelu)(x3_1)
+    # value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    # value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    # qk = Multiply()([query, key])
+    # attention = Dense(64, activation='softmax')(qk)
+    # a_value = Multiply()([attention, value])
+    # tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    # tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
+    # att_1 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
+    # att_2 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x3_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
+    #
+    # query = Dense(256, activation=custom_gelu)(x4_1)
+    # query = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(query)
+    # query = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(query)
+    # key = Dense(256, activation=custom_gelu)(x4_1)
+    # key = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(key)
+    # key = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(key)
+    # value = Dense(256, activation=custom_gelu)(x4_1)
+    # value = Lambda(lambda x: tf.reshape(x, (-1, 180, 4, 64)))(value)
+    # value = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(value)
+    # qk = Multiply()([query, key])
+    # attention = Dense(64, activation='softmax')(qk)
+    # a_value = Multiply()([attention, value])
+    # tran_out = Lambda(lambda x: tf.transpose(x, perm=[0, 2, 1, 3]))(a_value)
+    # tran_out = Lambda(lambda x: tf.reshape(x, (-1, 180, 256)))(tran_out)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(tran_out))
+    # att_1 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_1 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_1_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x = Dropout(0.1)(Bidirectional(CuDNNLSTM(256, return_sequences=True))(x))
+    # att_2 = Attention(180)(x)
+    # semantic = TimeDistributed(Dense(128, activation=custom_gelu))(x)
+    # merged_2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(semantic)
+    # merged_2_avg = Lambda(lambda x: K.mean(x, axis=1), output_shape=(128,))(semantic)
+    # x4_1_all = concatenate([att_1, merged_1, merged_1_avg, att_2, merged_2, merged_2_avg])
 
     hin = Input(shape=(num_features_input,))
     htime = Dropout(0.1)(Dense(128, activation=custom_gelu)(hin))
@@ -548,18 +623,17 @@ def comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, e
     merged36 = Multiply()([x3_all, x6_all])
     merged36 = Dropout(0.1)(merged36)
 
-    merged11_1 = Multiply()([x1_all, x1_1_all])
-    merged11_1 = Dropout(0.1)(merged11_1)
-    merged22_1 = Multiply()([x2_all, x2_1_all])
-    merged22_1 = Dropout(0.1)(merged22_1)
-    merged33_1 = Multiply()([x3_all, x3_1_all])
-    merged33_1 = Dropout(0.1)(merged33_1)
-    merged44_1 = Multiply()([x4_all, x4_1_all])
-    merged44_1 = Dropout(0.1)(merged44_1)
+    # merged11_1 = Multiply()([x1_all, x1_1_all])
+    # merged11_1 = Dropout(0.1)(merged11_1)
+    # merged22_1 = Multiply()([x2_all, x2_1_all])
+    # merged22_1 = Dropout(0.1)(merged22_1)
+    # merged33_1 = Multiply()([x3_all, x3_1_all])
+    # merged33_1 = Dropout(0.1)(merged33_1)
+    # merged44_1 = Multiply()([x4_all, x4_1_all])
+    # merged44_1 = Dropout(0.1)(merged44_1)
 
     x = concatenate(
-        [x1_all, x2_all, x3_all, x4_all, x6_all, x1_1_all, x2_1_all, x3_1_all, x4_1_all, merged12, merged13, merged23,
-         merged34, merged41, merged36, merged11_1, merged22_1, merged33_1, merged44_1, htime])
+        [x1_all, x2_all, x3_all, x4_all, x6_all, merged12, merged13, merged23, merged34, merged41, merged36, htime])
     x = Dropout(0.1)(Activation(activation=custom_gelu)(BatchNormalization()(Dense(2048)(x))))
     x = Activation(activation=custom_gelu)(BatchNormalization()(Dense(512)(x)))
     pred = Dense(20, activation='softmax')(x)
@@ -616,8 +690,9 @@ for i, (train_index, val_index) in enumerate(skf.split(train_x1, labels)):
     earlystopping = EarlyStopping(
         monitor='val_acc', min_delta=0.00001, patience=6, verbose=1, mode='max')
     callbacks = [checkpoint, reduce_lr, earlystopping]
-    comprehensive_model = comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, emb3_1, emb4_1,
-                                                       num_features_input)
+    # comprehensive_model = comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, emb3_1, emb4_1,
+    #                                                    num_features_input)
+    comprehensive_model = comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, num_features_input)
     if count == 0:
         comprehensive_model.summary()
     x1_tr, x1_va = np.array(train_x1)[train_index], np.array(train_x1)[val_index]
@@ -633,8 +708,9 @@ for i, (train_index, val_index) in enumerate(skf.split(train_x1, labels)):
                                    validation_data=([x1_va, x2_va, x3_va, x4_va, x6_va, x7_va], y_va),
                                    callbacks=callbacks, verbose=1, shuffle=True)
 
-    best_model = comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, emb3_1, emb4_1,
-                                              num_features_input)
+    # best_model = comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, emb1_1, emb2_1, emb3_1, emb4_1,
+    #                                           num_features_input)
+    best_model = comprehensive_model_conv_v12(emb1, emb2, emb3, emb4, emb6, num_features_input)
     best_model.load_weights(filepath)
     comprehensive_pred = best_model.predict([test_x1, test_x2, test_x3, test_x4, test_x6, hin_input], batch_size=512)
 

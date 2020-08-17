@@ -7,11 +7,16 @@
     * 白猫尾 东南大学
 * 本次比赛站在了前辈的肩膀上完成，同时也跟大赛的其它选手进行了交流与学习，主要参考：
     * https://github.com/chizhu/yiguan_sex_age_predict_1st_solution
-    * https://www.tensorflow.org/
 * 大赛链接：
     * https://algo.qq.com/
 * 开源地址：
-    * https://github.com/xingchao92/tencent-ad-competition-2020
+    * https://github.com/competition-team-seu/tencent-ad-competition-2020
+    
+# 环境
+* python>=3.5
+* tensorflow>=1.13
+* sklearn>=0.19
+* gensim>=3.8
 
 # 赛题介绍
 * 本赛题属于用户画像领域的经典问题，本质是通过用户的行为、广告的画像来探索用户的性别和年龄，在工业界具有极高的应用价值
@@ -36,7 +41,7 @@
     * 采用sg训练，window size为15
     * word embedding向量为256
     * 迭代次数为30左右
-* 采用countvector(https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html) 获取每个用户的产品ID序列的dense特征，向量长度为128
+* 采用countvector(https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html) 获取每个用户的产品ID序列(点击次数序列)的dense特征，向量长度为128
 * 统计类特征：
     * 每个用户的点击总数
 
@@ -47,7 +52,7 @@
 
 从图中可以看到基本的网络结构：
 * ATT表示self-attention层，其中Embedding层上的ATT层在有的模型中有，有的模型中没有，实验效果发现加上会有几个千的提升
-* 在复赛阶段，我们尝试了多层LSTM，如图中的虚框所示，在每层LSTM的输出都会记录下来，到concat层进行拼接，得到最终的结果
+* 在复赛阶段，我们尝试了多层LSTM，如图中的虚框所示，在每层LSTM的输出都会记录下来(包括self-attention，1D CNN，TimeDistributed 全连接层后求MAX/AVG Pooling)，到concat层进行拼接，得到最终的结果
 * 使用了gelu激活函数
 * 采用20分类进行loss构建，训练模型得到二十维分布之后，对联合概率分布进行求和，得到最终年龄和性别的概率分布
 
